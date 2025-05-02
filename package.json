@@ -1,6 +1,12 @@
 {
-  "name": "proxy-radios-vercel",
+  "name": "proxy-radios",
+  "version": "1.0.0",
+  "main": "api/check.js",
+  "scripts": {
+    "start": "node api/check.js"
+  },
   "dependencies": {
-    "node-fetch": "^2.6.7"
+    "node-fetch": "^2.6.7",
+    "express": "^4.18.2"
   }
 }
