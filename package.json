@@ -1,12 +1,12 @@
 {
-  "name": "proxy-radios",
+  "name": "proxy-radios-cyclic",
   "version": "1.0.0",
-  "main": "api/check.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node api/check.js"
+    "start": "node server.js"
   },
   "dependencies": {
-    "node-fetch": "^2.6.7",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "node-fetch": "^2.6.7"
   }
 }
