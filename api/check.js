@@ -9,10 +9,14 @@ export default async function handler(req, res) {
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000); // Timeout de 5s
+    const timeout = setTimeout(() => controller.abort(), 7000); // Timeout de 7s
 
     const response = await fetch(url, {
-      method: 'HEAD',
+      method: 'GET',
+      headers: {
+        'Range': 'bytes=0-1',
+        'User-Agent': 'Mozilla/5.0 (compatible; RadioChecker/1.0)'
+      },
       redirect: 'follow',
       signal: controller.signal
     });
@@ -33,7 +37,7 @@ export default async function handler(req, res) {
   } catch (error) {
     return res.status(500).json({
       ok: false,
-      error: error.name === 'AbortError' ? 'Timeout dépassé (5s)' : error.message
+      error: error.name === 'AbortError' ? 'Timeout dépassé (7s)' : error.message
     });
   }
 }
