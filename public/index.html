@@ -120,6 +120,21 @@
       display: none;
     }
 
+    #loadingMask {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.5em;
+      z-index: 999;
+    }
+
   </style>
 </head>
 <body>
@@ -163,6 +178,8 @@
     <div id="resume" class="summary" style="display:none;"></div>
   </main>
 
+  <div id="loadingMask">Tests en cours...</div>
+
   <script>
     const resultats = document.getElementById("resultats");
     const progressBar = document.getElementById("progress-bar");
@@ -170,6 +187,7 @@
     const okRadiosList = document.getElementById("okRadiosList");
     const okRadiosSection = document.getElementById("okRadios");
     const radioRows = [];
+    const loadingMask = document.getElementById("loadingMask");
 
     let totalRadios = 0;
     let radiosTested = 0;
@@ -237,6 +255,8 @@
         updateOkRadios();
       } catch (e) {
         resultats.innerHTML = `<tr><td colspan="2" class="error">❌ Erreur de chargement du fichier radios.json</td></tr>`;
+      } finally {
+        loadingMask.style.display = "none";  // Masquer le masque lorsque les tests sont terminés
       }
     }
 
