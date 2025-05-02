@@ -3,14 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <title>Test des flux radios</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    /* Ton style donné précédemment */
+    * { box-sizing: border-box; }
 
     body {
       font-family: 'Montserrat', sans-serif;
       margin: 0;
+      background-color: #0f0c29;
       background-image: radial-gradient(circle at top left, #0f0c29, #302b63, #24243e);
       background-size: cover;
       background-repeat: no-repeat;
@@ -37,7 +38,7 @@
 
     h1 {
       font-size: 2.8em;
-      margin: 0 0 20px;
+      margin: 0 0 10px;
       background: linear-gradient(90deg, #00ffe0, #ff00ff, #00ffe0);
       background-size: 200% auto;
       -webkit-background-clip: text;
@@ -51,128 +52,126 @@
       100% { background-position: 0% center; }
     }
 
-    #progress {
-      width: 100%;
-      background: #ddd;
-      border-radius: 5px;
-      margin-top: 20px;
-      height: 20px;
+    #stats {
+      margin-top: 10px;
+      font-size: 1.1em;
+      color: #00ffe0;
     }
 
-    #progress-bar {
+    #progressBarContainer {
+      width: 80%;
+      height: 14px;
+      margin: 30px auto 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    #progressBar {
       height: 100%;
-      width: 0;
-      background: #4caf50;
-      border-radius: 5px;
+      width: 0%;
+      background: linear-gradient(90deg, #00ffe0, #ff00ff);
+      transition: width 0.3s ease;
     }
 
-    table {
-      margin-top: 30px;
-      width: 100%;
+    #testTable {
+      margin: 320px auto 50px;
+      width: 90%;
+      max-width: 1000px;
       border-collapse: collapse;
-      color: white;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      overflow: hidden;
+      display: none;
     }
 
-    th, td {
-      padding: 8px;
-      border: 1px solid #ddd;
+    #testTable th, #testTable td {
+      padding: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       text-align: left;
     }
 
-    th {
-      background-color: #f2f2f2;
-      color: #24243e;
-    }
-
-    .radio-item {
-      background: rgba(255, 255, 255, 0.05);
-      border: 2px solid rgba(255, 0, 255, 0.3);
-      border-radius: 18px;
-      padding: 20px;
-      text-align: center;
-      transition: transform 0.4s ease, box-shadow 0.4s ease;
-      cursor: pointer;
-      backdrop-filter: blur(10px);
-    }
-
-    .radio-item:hover {
-      transform: scale(1.1);
-      box-shadow: 0 0 25px rgba(255, 0, 255, 0.5);
-    }
-
-    .radio-item img {
-      width: 100px;
-      height: 100px;
-      object-fit: cover;
-      border-radius: 14px;
-      margin-bottom: 10px;
-    }
-
-    .name {
-      font-weight: bold;
+    #testTable th {
+      background-color: rgba(0, 255, 255, 0.2);
       color: #00ffe0;
-      margin-bottom: 5px;
     }
 
-    .genre {
-      font-size: 0.9em;
-      color: #bbb;
-    }
+    .ok { color: #00ff99; font-weight: bold; }
+    .ko { color: #ff0077; font-weight: bold; }
   </style>
 </head>
 <body>
+
   <div class="top-bar">
     <h1>Vérification des flux radios</h1>
+    <div id="stats">
+      Radios testées : <span id="countTotal">0</span> |
+      OK : <span id="countOK">0</span> |
+      KO : <span id="countKO">0</span>
+    </div>
+    <div id="progressBarContainer">
+      <div id="progressBar"></div>
+    </div>
   </div>
-  <div id="progress">
-    <div id="progress-bar"></div>
-  </div>
-  <div id="resultats">Chargement...</div>
 
-  <h2>Récapitulatif des résultats</h2>
-  <table id="table-recaps">
+  <table id="testTable">
     <thead>
       <tr>
-        <th>Nom de la radio</th>
-        <th>Status</th>
+        <th>Nom</th>
+        <th>URL</th>
+        <th>Statut</th>
       </tr>
     </thead>
-    <tbody></tbody>
+    <tbody id="resultats"></tbody>
   </table>
 
   <script>
     const resultats = document.getElementById("resultats");
-    const progressBar = document.getElementById("progress-bar");
-    const recapTable = document.getElementById("table-recaps").getElementsByTagName('tbody')[0];
+    const progressBar = document.getElementById("progressBar");
+    const countTotal = document.getElementById("countTotal");
+    const countOK = document.getElementById("countOK");
+    const countKO = document.getElementById("countKO");
+    const testTable = document.getElementById("testTable");
+
+    let okCount = 0;
+    let koCount = 0;
+    let totalCount = 0;
+    let testedCount = 0;
+
+    function updateProgress() {
+      const progress = (testedCount / totalCount) * 100;
+      progressBar.style.width = `${progress}%`;
+    }
 
     async function verifierRadios() {
       try {
         const res = await fetch("https://raw.githubusercontent.com/mikefri/radios-data/refs/heads/main/radios.json");
         const radios = await res.json();
-        const totalRadios = radios.length;
-        let count = 0;
 
-        // Mettre à jour la barre de progression
-        function updateProgress() {
-          const percentage = (count / totalRadios) * 100;
-          progressBar.style.width = `${percentage}%`;
-        }
+        totalCount = radios.length;
+        countTotal.textContent = totalCount;
+        updateProgress();
 
-        resultats.innerHTML = ""; // Masquer les tests en cours
-
-        // Parcourir les radios et vérifier leur état
         for (const radio of radios) {
           const name = radio.name || "Sans nom";
           const url = radio.url || radio.stream;
 
           if (!url) continue;
 
-          // Ajouter un nouvel élément dans le tableau récapitulatif
-          const row = recapTable.insertRow();
-          const cellName = row.insertCell(0);
-          const cellStatus = row.insertCell(1);
+          const row = document.createElement("tr");
+          const cellName = document.createElement("td");
+          const cellUrl = document.createElement("td");
+          const cellStatus = document.createElement("td");
+
           cellName.textContent = name;
-          cellStatus.textContent = "Test en cours...";
+          cellUrl.innerHTML = `<a href="${url}" target="_blank" style="color: #fff; text-decoration: underline;">Voir</a>`;
+          cellStatus.innerHTML = '⏳ En test...';
+
+          row.appendChild(cellName);
+          row.appendChild(cellUrl);
+          row.appendChild(cellStatus);
+          resultats.appendChild(row);
 
           try {
             const response = await fetch(`/api/check?url=${encodeURIComponent(url)}`);
@@ -180,25 +179,32 @@
 
             if (data.ok && data.contentType.startsWith("audio")) {
               cellStatus.innerHTML = '<span class="ok">OK</span>';
+              okCount++;
             } else {
               cellStatus.innerHTML = `<span class="ko">Problème (${data.status})</span>`;
+              koCount++;
             }
           } catch (err) {
             cellStatus.innerHTML = '<span class="ko">Erreur</span>';
+            koCount++;
           }
 
-          count++;
+          testedCount++;
           updateProgress();
+
+          countOK.textContent = okCount;
+          countKO.textContent = koCount;
+          countTotal.textContent = testedCount;
         }
 
-        // Finaliser la barre de progression une fois le test terminé
-        updateProgress();
+        testTable.style.display = "table";
       } catch (e) {
-        resultats.textContent = "Erreur de chargement du fichier radios.json.";
+        document.body.innerHTML = "<p style='color: red; text-align: center; margin-top: 300px;'>Erreur de chargement du fichier radios.json.</p>";
       }
     }
 
     verifierRadios();
   </script>
+
 </body>
 </html>
