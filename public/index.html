@@ -116,6 +116,10 @@
       padding-left: 20px;
     }
 
+    .radio-row {
+      display: none;
+    }
+
   </style>
 </head>
 <body>
@@ -165,6 +169,7 @@
     const resume = document.getElementById("resume");
     const okRadiosList = document.getElementById("okRadiosList");
     const okRadiosSection = document.getElementById("okRadios");
+    const radioRows = [];
 
     let totalRadios = 0;
     let radiosTested = 0;
@@ -190,10 +195,18 @@
           if (!url) continue;
 
           const row = document.createElement("tr");
-          row.innerHTML = `<td>${name}</td><td class="loading">Test en cours...</td>`;
+          const nameCell = document.createElement("td");
+          const statusCell = document.createElement("td");
+
+          nameCell.textContent = name;
+          statusCell.textContent = "Test en cours...";
+          statusCell.className = "loading";
+
+          row.appendChild(nameCell);
+          row.appendChild(statusCell);
           
-          // Ne pas ajouter la ligne si tout va bien (OK)
           resultats.appendChild(row);
+          radioRows.push(row);
 
           try {
             const response = await fetch(`/api/check?url=${encodeURIComponent(url)}`);
@@ -202,6 +215,8 @@
             if (data.ok && data.contentType?.startsWith("audio")) {
               radiosOk.push(name); // Ajoute à la liste des radios OK
               radiosTested++;
+              row.cells[1].textContent = "OK";
+              row.cells[1].className = "ok";
             } else {
               row.cells[1].textContent = `Problème (${data.status || "?"})`;
               row.cells[1].className = "ko";
