@@ -1,0 +1,7 @@
+{
+  "name": "proxy-radios-vercel",
+  "type": "module",
+  "dependencies": {
+    "node-fetch": "^3.4.0"
+  }
+}
