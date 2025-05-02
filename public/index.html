@@ -22,30 +22,58 @@
 
     main {
       padding: 20px;
-      max-width: 800px;
+      max-width: 900px;
       margin: auto;
     }
 
-    .radio {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 14px 20px;
-      margin-bottom: 10px;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    .progress {
+      width: 100%;
+      height: 30px;
+      background: #e0e0e0;
+      border-radius: 6px;
+      margin-bottom: 20px;
     }
 
-    .status {
+    .progress-bar {
+      height: 100%;
+      background: #4caf50;
+      width: 0;
+      border-radius: 6px;
+      text-align: center;
+      color: white;
+      line-height: 30px;
+    }
+
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    .ko {
+      color: red;
       font-weight: bold;
-      padding: 6px 10px;
-      border-radius: 4px;
     }
 
-    .ok { background: #d4edda; color: #2e7d32; }
-    .ko { background: #f8d7da; color: #c62828; }
-    .loading { background: #fff3cd; color: #856404; }
+    .ok {
+      color: green;
+      font-weight: bold;
+    }
+
+    .loading {
+      color: orange;
+      font-weight: bold;
+    }
 
     .summary {
       margin-top: 30px;
@@ -58,13 +86,6 @@
 
     .error { color: red; }
 
-    @media (max-width: 600px) {
-      .radio {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-      }
-    }
   </style>
 </head>
 <body>
@@ -73,63 +94,103 @@
   </header>
 
   <main>
-    <div id="resultats">Chargement...</div>
+    <div id="progress-container">
+      <div class="progress">
+        <div id="progress-bar" class="progress-bar">0%</div>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Nom de la Radio</th>
+          <th>Statut</th>
+        </tr>
+      </thead>
+      <tbody id="resultats">
+        <tr>
+          <td colspan="2">Chargement...</td>
+        </tr>
+      </tbody>
+    </table>
+
     <div id="resume" class="summary" style="display:none;"></div>
   </main>
 
   <script>
     const resultats = document.getElementById("resultats");
+    const progressBar = document.getElementById("progress-bar");
     const resume = document.getElementById("resume");
+
+    let totalRadios = 0;
+    let radiosTested = 0;
+    let radiosWithProblems = [];
 
     async function verifierRadios() {
       try {
         const res = await fetch("https://raw.githubusercontent.com/mikefri/radios-data/refs/heads/main/radios.json");
         const radios = await res.json();
 
-        let total = 0, ok = 0, ko = 0;
+        totalRadios = radios.length;
+        radiosTested = 0;
+        radiosWithProblems = [];
 
         resultats.innerHTML = "";
+
         for (const radio of radios) {
           const name = radio.name || "Sans nom";
           const url = radio.url || radio.stream;
+
           if (!url) continue;
 
-          total++;
-
-          const div = document.createElement("div");
-          div.className = "radio";
-          div.innerHTML = `<span>${name}</span><span class="status loading">Test...</span>`;
-          resultats.appendChild(div);
+          const row = document.createElement("tr");
+          row.innerHTML = `<td>${name}</td><td class="loading">Test en cours...</td>`;
+          resultats.appendChild(row);
 
           try {
             const response = await fetch(`/api/check?url=${encodeURIComponent(url)}`);
             const data = await response.json();
 
             if (data.ok && data.contentType?.startsWith("audio")) {
-              div.querySelector(".status").textContent = "OK";
-              div.querySelector(".status").className = "status ok";
-              ok++;
+              row.cells[1].textContent = "OK";
+              row.cells[1].className = "ok";
             } else {
-              div.querySelector(".status").textContent = `Problème (${data.status || "?"})`;
-              div.querySelector(".status").className = "status ko";
-              ko++;
+              row.cells[1].textContent = `Problème (${data.status || "?"})`;
+              row.cells[1].className = "ko";
+              radiosWithProblems.push(name);
             }
           } catch (err) {
-            div.querySelector(".status").textContent = "Erreur";
-            div.querySelector(".status").className = "status ko";
-            ko++;
+            row.cells[1].textContent = "Erreur";
+            row.cells[1].className = "ko";
+            radiosWithProblems.push(name);
           }
+
+          radiosTested++;
+          updateProgress();
         }
 
-        resume.style.display = "block";
-        resume.innerHTML = `
-          ✅ Radios testées : <strong>${total}</strong><br>
-          🟢 Fonctionnelles : <strong style="color:green">${ok}</strong><br>
-          🔴 En erreur : <strong style="color:red">${ko}</strong>
-        `;
+        updateSummary();
       } catch (e) {
-        resultats.innerHTML = `<p class="error">❌ Erreur de chargement du fichier radios.json</p>`;
+        resultats.innerHTML = `<tr><td colspan="2" class="error">❌ Erreur de chargement du fichier radios.json</td></tr>`;
       }
+    }
+
+    function updateProgress() {
+      const percentage = Math.round((radiosTested / totalRadios) * 100);
+      progressBar.style.width = `${percentage}%`;
+      progressBar.textContent = `${percentage}%`;
+    }
+
+    function updateSummary() {
+      resume.style.display = "block";
+      resume.innerHTML = `
+        ✅ Radios testées : <strong>${totalRadios}</strong><br>
+        🟢 Fonctionnelles : <strong style="color:green">${totalRadios - radiosWithProblems.length}</strong><br>
+        🔴 En erreur : <strong style="color:red">${radiosWithProblems.length}</strong><br>
+        <br><strong>Radios avec problèmes :</strong><ul>
+          ${radiosWithProblems.map(radio => `<li>${radio}</li>`).join('')}
+        </ul>
+      `;
     }
 
     verifierRadios();
