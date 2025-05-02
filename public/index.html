@@ -28,7 +28,7 @@
     main {
       flex-grow: 1;
       padding: 20px;
-      max-width: 900px;
+      max-width: 1000px;
       margin: auto;
       display: flex;
       flex-direction: column;
@@ -53,12 +53,19 @@
       line-height: 20px;
     }
 
+    .container {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .column {
+      width: 48%;
+    }
+
     table {
       width: 100%;
       margin-top: 15px;
       border-collapse: collapse;
-      max-height: 200px;
-      overflow-y: auto;
     }
 
     th, td {
@@ -77,6 +84,11 @@
       font-weight: bold;
     }
 
+    .ok {
+      color: green;
+      font-weight: bold;
+    }
+
     .summary {
       background: #e9ecef;
       padding: 10px;
@@ -91,6 +103,19 @@
       color: orange;
       font-weight: bold;
     }
+
+    #okRadios {
+      background: #e9f7e7;
+      padding: 15px;
+      border-radius: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      margin-top: 20px;
+    }
+
+    #okRadios ul {
+      padding-left: 20px;
+    }
+
   </style>
 </head>
 <body>
@@ -105,19 +130,31 @@
       </div>
     </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Nom de la Radio</th>
-          <th>Statut</th>
-        </tr>
-      </thead>
-      <tbody id="resultats">
-        <tr>
-          <td colspan="2">Chargement...</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="container">
+      <!-- Radios en erreur -->
+      <div class="column" id="problemRadios">
+        <h3>Radios avec problèmes</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Nom de la Radio</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody id="resultats">
+            <tr>
+              <td colspan="2">Chargement...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Radios OK -->
+      <div class="column" id="okRadios">
+        <h3>Radios Fonctionnelles</h3>
+        <ul id="okRadiosList"></ul>
+      </div>
+    </div>
 
     <div id="resume" class="summary" style="display:none;"></div>
   </main>
@@ -126,10 +163,13 @@
     const resultats = document.getElementById("resultats");
     const progressBar = document.getElementById("progress-bar");
     const resume = document.getElementById("resume");
+    const okRadiosList = document.getElementById("okRadiosList");
+    const okRadiosSection = document.getElementById("okRadios");
 
     let totalRadios = 0;
     let radiosTested = 0;
     let radiosWithProblems = [];
+    let radiosOk = [];
 
     async function verifierRadios() {
       try {
@@ -139,6 +179,7 @@
         totalRadios = radios.length;
         radiosTested = 0;
         radiosWithProblems = [];
+        radiosOk = [];
 
         resultats.innerHTML = "";
 
@@ -159,7 +200,7 @@
             const data = await response.json();
 
             if (data.ok && data.contentType?.startsWith("audio")) {
-              // Si OK, on ne fait rien, la radio ne sera pas ajoutée au tableau
+              radiosOk.push(name); // Ajoute à la liste des radios OK
               radiosTested++;
             } else {
               row.cells[1].textContent = `Problème (${data.status || "?"})`;
@@ -178,6 +219,7 @@
         }
 
         updateSummary();
+        updateOkRadios();
       } catch (e) {
         resultats.innerHTML = `<tr><td colspan="2" class="error">❌ Erreur de chargement du fichier radios.json</td></tr>`;
       }
@@ -199,6 +241,13 @@
           ${radiosWithProblems.map(radio => `<li>${radio}</li>`).join('')}
         </ul>
       `;
+    }
+
+    function updateOkRadios() {
+      if (radiosOk.length > 0) {
+        okRadiosSection.style.display = "block";
+        okRadiosList.innerHTML = radiosOk.map(radio => `<li>${radio}</li>`).join('');
+      }
     }
 
     verifierRadios();
