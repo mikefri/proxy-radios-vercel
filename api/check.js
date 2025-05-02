@@ -1,18 +1,39 @@
-const express = require('express');
-const fetch = require('node-fetch');
-const path = require('path');
-const app = express();
+import fetch from 'node-fetch';
 
-const PORT = process.env.PORT || 3000;
+export default async function handler(req, res) {
+  const { url } = req.query;
 
-// Servir le HTML
-app.use(express.static(path.join(__dirname, '../public')));
+  if (!url) {
+    return res.status(400).json({ ok: false, error: 'URL manquante' });
+  }
 
-// API proxy
-app.get('/api/check', async (req, res) => {
-  res.json({ status: "OK", message: "API check fonctionne" });
-});
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000); // Timeout de 5s
 
-app.listen(PORT, () => {
-  console.log(`Serveur lancé sur http://localhost:${PORT}`);
-});
+    const response = await fetch(url, {
+      method: 'HEAD',
+      redirect: 'follow',
+      signal: controller.signal
+    });
+
+    clearTimeout(timeout);
+
+    const contentType = response.headers.get('content-type') || '';
+    const isAudio = contentType.startsWith('audio') || contentType.includes('mpeg') || contentType.includes('aac');
+
+    return res.status(200).json({
+      ok: response.ok && isAudio,
+      status: response.status,
+      contentType,
+      finalUrl: response.url,
+      isAudio
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      error: error.name === 'AbortError' ? 'Timeout dépassé (5s)' : error.message
+    });
+  }
+}
