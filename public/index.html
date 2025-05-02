@@ -1,18 +1,96 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Test des flux radios</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }
-    .radio { padding: 10px; margin: 8px 0; background: white; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    .ok { color: green; }
-    .ko { color: red; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f9f9fb;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background: #4a90e2;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.8em;
+    }
+
+    main {
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    .radio {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 20px;
+      margin-bottom: 10px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      transition: background 0.3s;
+    }
+
+    .radio:hover {
+      background: #f2faff;
+    }
+
+    .status {
+      font-weight: bold;
+      padding: 6px 10px;
+      border-radius: 4px;
+    }
+
+    .ok {
+      background: #d4edda;
+      color: #2e7d32;
+    }
+
+    .ko {
+      background: #f8d7da;
+      color: #c62828;
+    }
+
+    .loading {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .error {
+      text-align: center;
+      color: red;
+      margin-top: 30px;
+    }
+
+    @media (max-width: 600px) {
+      .radio {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>Vérification des flux radios</h1>
-  <div id="resultats">Chargement...</div>
+  <header>
+    <h1>Vérification des flux radios</h1>
+  </header>
+
+  <main>
+    <div id="resultats">Chargement en cours...</div>
+  </main>
 
   <script>
     const resultats = document.getElementById("resultats");
@@ -26,29 +104,31 @@
         for (const radio of radios) {
           const name = radio.name || "Sans nom";
           const url = radio.url || radio.stream;
-
           if (!url) continue;
 
           const div = document.createElement("div");
           div.className = "radio";
-          div.innerHTML = `<strong>${name}</strong> : <em>Test en cours...</em>`;
+          div.innerHTML = `<span>${name}</span><span class="status loading">Test...</span>`;
           resultats.appendChild(div);
 
           try {
             const response = await fetch(`/api/check?url=${encodeURIComponent(url)}`);
             const data = await response.json();
 
-            if (data.ok && data.contentType.startsWith("audio")) {
-              div.innerHTML = `<strong>${name}</strong> : <span class="ok">OK</span>`;
+            if (data.ok) {
+              div.querySelector(".status").textContent = "OK";
+              div.querySelector(".status").className = "status ok";
             } else {
-              div.innerHTML = `<strong>${name}</strong> : <span class="ko">Problème (${data.status})</span>`;
+              div.querySelector(".status").textContent = `Problème (${data.status || "?"})`;
+              div.querySelector(".status").className = "status ko";
             }
           } catch (err) {
-            div.innerHTML = `<strong>${name}</strong> : <span class="ko">Erreur</span>`;
+            div.querySelector(".status").textContent = "Erreur";
+            div.querySelector(".status").className = "status ko";
           }
         }
       } catch (e) {
-        resultats.textContent = "Erreur de chargement du fichier radios.json.";
+        resultats.innerHTML = `<p class="error">❌ Erreur de chargement du fichier radios.json</p>`;
       }
     }
 
