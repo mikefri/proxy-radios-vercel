@@ -1,287 +1,54 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
   <title>Test des flux radios</title>
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #f9f9fb;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      height: 100vh;
-    }
-
-    header {
-      background: #4a90e2;
-      color: white;
-      padding: 15px;
-      text-align: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      font-size: 1.5em;
-    }
-
-    main {
-      flex-grow: 1;
-      padding: 20px;
-      max-width: 1000px;
-      margin: auto;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .progress {
-      width: 100%;
-      height: 20px;
-      background: #e0e0e0;
-      border-radius: 6px;
-      margin-bottom: 15px;
-    }
-
-    .progress-bar {
-      height: 100%;
-      background: #4caf50;
-      width: 0;
-      border-radius: 6px;
-      text-align: center;
-      color: white;
-      line-height: 20px;
-    }
-
-    .container {
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .column {
-      width: 48%;
-    }
-
-    table {
-      width: 100%;
-      margin-top: 15px;
-      border-collapse: collapse;
-    }
-
-    th, td {
-      padding: 10px;
-      text-align: left;
-      border: 1px solid #ddd;
-      font-size: 0.9em;
-    }
-
-    th {
-      background-color: #f2f2f2;
-    }
-
-    .ko {
-      color: red;
-      font-weight: bold;
-    }
-
-    .ok {
-      color: green;
-      font-weight: bold;
-    }
-
-    .summary {
-      background: #e9ecef;
-      padding: 10px;
-      border-radius: 6px;
-      font-size: 1em;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-      margin-top: 20px;
-      text-align: center;
-    }
-
-    .loading {
-      color: orange;
-      font-weight: bold;
-    }
-
-    #okRadios {
-      background: #e9f7e7;
-      padding: 15px;
-      border-radius: 6px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-      margin-top: 20px;
-    }
-
-    #okRadios ul {
-      padding-left: 20px;
-    }
-
-    .radio-row {
-      display: none;
-    }
-
-    #loadingMask {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      color: white;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 1.5em;
-      z-index: 999;
-    }
-
+    body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }
+    .radio { padding: 10px; margin: 8px 0; background: white; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .ok { color: green; }
+    .ko { color: red; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Vérification des flux radios</h1>
-  </header>
-
-  <main>
-    <div id="progress-container">
-      <div class="progress">
-        <div id="progress-bar" class="progress-bar">0%</div>
-      </div>
-    </div>
-
-    <div class="container">
-      <!-- Radios en erreur -->
-      <div class="column" id="problemRadios">
-        <h3>Radios avec problèmes</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Nom de la Radio</th>
-              <th>Statut</th>
-            </tr>
-          </thead>
-          <tbody id="resultats">
-            <tr>
-              <td colspan="2">Chargement...</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Radios OK -->
-      <div class="column" id="okRadios">
-        <h3>Radios Fonctionnelles</h3>
-        <ul id="okRadiosList"></ul>
-      </div>
-    </div>
-
-    <div id="resume" class="summary" style="display:none;"></div>
-  </main>
-
-  <div id="loadingMask">Tests en cours...</div>
+  <h1>Vérification des flux radios</h1>
+  <div id="resultats">Chargement...</div>
 
   <script>
     const resultats = document.getElementById("resultats");
-    const progressBar = document.getElementById("progress-bar");
-    const resume = document.getElementById("resume");
-    const okRadiosList = document.getElementById("okRadiosList");
-    const okRadiosSection = document.getElementById("okRadios");
-    const radioRows = [];
-    const loadingMask = document.getElementById("loadingMask");
-
-    let totalRadios = 0;
-    let radiosTested = 0;
-    let radiosWithProblems = [];
-    let radiosOk = [];
 
     async function verifierRadios() {
       try {
         const res = await fetch("https://raw.githubusercontent.com/mikefri/radios-data/refs/heads/main/radios.json");
         const radios = await res.json();
 
-        totalRadios = radios.length;
-        radiosTested = 0;
-        radiosWithProblems = [];
-        radiosOk = [];
-
         resultats.innerHTML = "";
-
         for (const radio of radios) {
           const name = radio.name || "Sans nom";
           const url = radio.url || radio.stream;
 
           if (!url) continue;
 
-          const row = document.createElement("tr");
-          const nameCell = document.createElement("td");
-          const statusCell = document.createElement("td");
-
-          nameCell.textContent = name;
-          statusCell.textContent = "Test en cours...";
-          statusCell.className = "loading";
-
-          row.appendChild(nameCell);
-          row.appendChild(statusCell);
-          
-          resultats.appendChild(row);
-          radioRows.push(row);
+          const div = document.createElement("div");
+          div.className = "radio";
+          div.innerHTML = `<strong>${name}</strong> : <em>Test en cours...</em>`;
+          resultats.appendChild(div);
 
           try {
             const response = await fetch(`/api/check?url=${encodeURIComponent(url)}`);
             const data = await response.json();
 
-            if (data.ok && data.contentType?.startsWith("audio")) {
-              radiosOk.push(name); // Ajoute à la liste des radios OK
-              radiosTested++;
-              row.cells[1].textContent = "OK";
-              row.cells[1].className = "ok";
+            if (data.ok && data.contentType.startsWith("audio")) {
+              div.innerHTML = `<strong>${name}</strong> : <span class="ok">OK</span>`;
             } else {
-              row.cells[1].textContent = `Problème (${data.status || "?"})`;
-              row.cells[1].className = "ko";
-              radiosWithProblems.push(name); // Ajoute la radio avec problème
-              radiosTested++;
+              div.innerHTML = `<strong>${name}</strong> : <span class="ko">Problème (${data.status})</span>`;
             }
           } catch (err) {
-            row.cells[1].textContent = "Erreur";
-            row.cells[1].className = "ko";
-            radiosWithProblems.push(name);
-            radiosTested++;
+            div.innerHTML = `<strong>${name}</strong> : <span class="ko">Erreur</span>`;
           }
-
-          updateProgress();
         }
-
-        updateSummary();
-        updateOkRadios();
       } catch (e) {
-        resultats.innerHTML = `<tr><td colspan="2" class="error">❌ Erreur de chargement du fichier radios.json</td></tr>`;
-      } finally {
-        loadingMask.style.display = "none";  // Masquer le masque lorsque les tests sont terminés
-      }
-    }
-
-    function updateProgress() {
-      const percentage = Math.round((radiosTested / totalRadios) * 100);
-      progressBar.style.width = `${percentage}%`;
-      progressBar.textContent = `${percentage}%`;
-    }
-
-    function updateSummary() {
-      resume.style.display = "block";
-      resume.innerHTML = `
-        ✅ Radios testées : <strong>${totalRadios}</strong><br>
-        🟢 Fonctionnelles : <strong style="color:green">${totalRadios - radiosWithProblems.length}</strong><br>
-        🔴 En erreur : <strong style="color:red">${radiosWithProblems.length}</strong><br>
-        <br><strong>Radios avec problèmes :</strong><ul>
-          ${radiosWithProblems.map(radio => `<li>${radio}</li>`).join('')}
-        </ul>
-      `;
-    }
-
-    function updateOkRadios() {
-      if (radiosOk.length > 0) {
-        okRadiosSection.style.display = "block";
-        okRadiosList.innerHTML = radiosOk.map(radio => `<li>${radio}</li>`).join('');
+        resultats.textContent = "Erreur de chargement du fichier radios.json.";
       }
     }
 
