@@ -26,3 +26,4 @@ app.get("*", (_, res) => {
 });
 
 app.listen(PORT, () => console.log(`Serveur sur http://localhost:${PORT}`));
+
