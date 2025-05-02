@@ -20,11 +20,6 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
 
-    h1 {
-      margin: 0;
-      font-size: 1.8em;
-    }
-
     main {
       padding: 20px;
       max-width: 800px;
@@ -40,11 +35,6 @@
       background: white;
       border-radius: 8px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-      transition: background 0.3s;
-    }
-
-    .radio:hover {
-      background: #f2faff;
     }
 
     .status {
@@ -53,26 +43,20 @@
       border-radius: 4px;
     }
 
-    .ok {
-      background: #d4edda;
-      color: #2e7d32;
-    }
+    .ok { background: #d4edda; color: #2e7d32; }
+    .ko { background: #f8d7da; color: #c62828; }
+    .loading { background: #fff3cd; color: #856404; }
 
-    .ko {
-      background: #f8d7da;
-      color: #c62828;
-    }
-
-    .loading {
-      background: #fff3cd;
-      color: #856404;
-    }
-
-    .error {
-      text-align: center;
-      color: red;
+    .summary {
       margin-top: 30px;
+      padding: 20px;
+      background: #e9ecef;
+      border-radius: 6px;
+      font-size: 1.1em;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
     }
+
+    .error { color: red; }
 
     @media (max-width: 600px) {
       .radio {
@@ -89,22 +73,28 @@
   </header>
 
   <main>
-    <div id="resultats">Chargement en cours...</div>
+    <div id="resultats">Chargement...</div>
+    <div id="resume" class="summary" style="display:none;"></div>
   </main>
 
   <script>
     const resultats = document.getElementById("resultats");
+    const resume = document.getElementById("resume");
 
     async function verifierRadios() {
       try {
         const res = await fetch("https://raw.githubusercontent.com/mikefri/radios-data/refs/heads/main/radios.json");
         const radios = await res.json();
 
+        let total = 0, ok = 0, ko = 0;
+
         resultats.innerHTML = "";
         for (const radio of radios) {
           const name = radio.name || "Sans nom";
           const url = radio.url || radio.stream;
           if (!url) continue;
+
+          total++;
 
           const div = document.createElement("div");
           div.className = "radio";
@@ -115,18 +105,28 @@
             const response = await fetch(`/api/check?url=${encodeURIComponent(url)}`);
             const data = await response.json();
 
-            if (data.ok) {
+            if (data.ok && data.contentType?.startsWith("audio")) {
               div.querySelector(".status").textContent = "OK";
               div.querySelector(".status").className = "status ok";
+              ok++;
             } else {
               div.querySelector(".status").textContent = `Problème (${data.status || "?"})`;
               div.querySelector(".status").className = "status ko";
+              ko++;
             }
           } catch (err) {
             div.querySelector(".status").textContent = "Erreur";
             div.querySelector(".status").className = "status ko";
+            ko++;
           }
         }
+
+        resume.style.display = "block";
+        resume.innerHTML = `
+          ✅ Radios testées : <strong>${total}</strong><br>
+          🟢 Fonctionnelles : <strong style="color:green">${ok}</strong><br>
+          🔴 En erreur : <strong style="color:red">${ko}</strong>
+        `;
       } catch (e) {
         resultats.innerHTML = `<p class="error">❌ Erreur de chargement du fichier radios.json</p>`;
       }
